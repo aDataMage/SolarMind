@@ -318,14 +318,14 @@ export default function ChatInterfaceContent() {
                 alert('Failed to upload image. Please try again.');
             }
         } else {
-            sendMessage({ role: 'user', content: userMessage });
+            sendMessage({ text: userMessage } as any);
         }
     };
 
     const handleSuggestionClick = (suggestion: string) => {
         setSuggestions([]);
         hasSentFirstMessage.current = true;
-        sendMessage({ role: 'user', content: suggestion });
+        sendMessage({ text: suggestion } as any);
     };
 
     const handleRetry = async () => {
@@ -459,10 +459,10 @@ export default function ChatInterfaceContent() {
                                             let displayParts: any[] = [];
                                             if (message.parts && message.parts.length > 0) {
                                                 displayParts = message.parts;
-                                            } else if (Array.isArray(message.content)) {
-                                                displayParts = message.content;
-                                            } else if (typeof message.content === 'string') {
-                                                displayParts = [{ type: 'text', text: message.content }];
+                                            } else if (Array.isArray((message as any).content)) {
+                                                displayParts = (message as any).content;
+                                            } else if (typeof (message as any).content === 'string') {
+                                                displayParts = [{ type: 'text', text: (message as any).content }];
                                             }
 
                                             return displayParts.map((part, idx) => {
