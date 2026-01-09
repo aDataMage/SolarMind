@@ -1,9 +1,13 @@
-import { pgTable, varchar, decimal, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, text, decimal, jsonb, real } from 'drizzle-orm/pg-core';
 
-// Easy to swap 'rooms' for 'properties' or 'products'
-export const rooms = pgTable('rooms', {
+export const products = pgTable('products', {
     id: varchar('id').primaryKey(),
+    slug: varchar('slug').unique().notNull(),
     name: varchar('name').notNull(),
+    description: text('description').notNull(),
     price: decimal('price').notNull(),
-    features: jsonb('features'), // Flexible JSON for varied attributes
+    category: varchar('category').notNull(), // 'panels' | 'batteries' etc
+    rating: real('rating').default(0),
+    image: text('image'),
+    specs: jsonb('specs'), // Flexible JSON for technical specs
 });
