@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Product } from '@/lib/actions/product';
 import { products } from '@/lib/data';
 import Link from 'next/link';
 import { ArrowRight, Check, Zap, Lightbulb, Tv, Fan, Refrigerator, Laptop, Wind } from 'lucide-react';

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Product } from '@/lib/data';
+import { Product } from '@/lib/actions/product';
 import { useCartStore } from '@/store/useCartStore';
 
 interface ProductCardProps {
@@ -52,7 +52,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
                 <div className="mt-auto pt-4 flex items-center justify-between">
                     <p className="text-lg font-bold text-foreground">
-                        ${product.price.toLocaleString()}
+                        ${parseFloat(product.price).toLocaleString()}
                     </p>
                     <Button
                         size="sm"

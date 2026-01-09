@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Product } from '@/lib/data';
+import { Product } from '@/lib/actions/product';
 
 interface CartItem extends Product {
     quantity: number;
@@ -60,7 +60,7 @@ export const useCartStore = create<CartStore>()(
                 return get().items.reduce((total, item) => total + item.quantity, 0);
             },
             totalPrice: () => {
-                return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
+                return get().items.reduce((total, item) => total + (parseFloat(item.price) * item.quantity), 0);
             },
         }),
         {

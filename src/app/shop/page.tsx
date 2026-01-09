@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Product } from '@/lib/actions/product';
 import { products } from '@/lib/data';
 import { ProductCard } from '@/components/solar/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -41,8 +42,8 @@ export default function ShopPage() {
                                         key={cat}
                                         onClick={() => setSelectedCategory(cat)}
                                         className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedCategory === cat
-                                                ? 'bg-primary/10 text-primary font-medium'
-                                                : 'text-muted-foreground hover:bg-muted'
+                                            ? 'bg-primary/10 text-primary font-medium'
+                                            : 'text-muted-foreground hover:bg-muted'
                                             }`}
                                     >
                                         {cat.charAt(0).toUpperCase() + cat.slice(1)}

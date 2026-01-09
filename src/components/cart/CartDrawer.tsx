@@ -64,7 +64,7 @@ export function CartDrawer() {
                                                     {item.name}
                                                 </Link>
                                                 <p className="font-semibold text-sm ml-2">
-                                                    ${(item.price * item.quantity).toLocaleString()}
+                                                    ${(parseFloat(item.price) * item.quantity).toLocaleString()}
                                                 </p>
                                             </div>
                                             <div className="flex items-center justify-between mt-2">

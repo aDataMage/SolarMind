@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Star, ShoppingCart, Truck, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Product, getProductBySlug } from '@/lib/actions/product';
 import { products } from '@/lib/data';
 import { useCartStore } from '@/store/useCartStore';
 import { ProductCard } from '@/components/solar/ProductCard';
@@ -114,7 +115,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                         <div className="mt-12 bg-muted/20 p-6 rounded-xl border">
                             <h3 className="text-lg font-semibold mb-4">Technical Specifications</h3>
                             <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 text-sm">
-                                {Object.entries(product.specs).map(([key, value]) => (
+                                {product.specs && Object.entries(product.specs).map(([key, value]) => (
                                     <div key={key} className="flex justify-between py-2 border-b last:border-0 border-border/50">
                                         <span className="text-muted-foreground">{key}</span>
                                         <span className="font-medium text-foreground">{value}</span>

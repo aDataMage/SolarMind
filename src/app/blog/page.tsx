@@ -40,7 +40,7 @@ export default function BlogListingPage() {
                                 {featuredPost.excerpt}
                             </p>
                             <div className="flex items-center gap-4">
-                                <Button asChild align="start">
+                                <Button asChild>
                                     <Link href={`/blog/${featuredPost.slug}`}>Read Article</Link>
                                 </Button>
                                 <span className="text-sm text-muted-foreground">{featuredPost.readTime}</span>

@@ -9,7 +9,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 const openai = createOpenAI({
-    timeout: 60000,
+    // timeout not supported in config
 });
 
 const SuggestionsSchema = z.object({

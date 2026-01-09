@@ -17,11 +17,17 @@ This is a production-ready template for building AI-integrated applications usin
     npm run dev
     ```
 
-## Architecture
+## Project Structure
 
-- **Domain Layer**: `src/lib/domain` (Entities, Business logic)
-- **Infrastructure Layer**: `src/lib/infrastructure` (AI Agents, DB, 3rd party adapters)
-- **Presentation Layer**: `src/app` (Next.js App Router)
+This project follows a Clean Architecture following the `src` directory pattern:
+
+- **`src/app`**: Presentation Layer (Next.js App Router). Contains pages, layouts, and API routes.
+- **`src/components`**: UI Components. Subdivided into `ui` (generic/shadcn) and feature-specific folders (e.g., `blog`).
+- **`src/lib`**: Core Application Logic.
+    - **`domain`**: Entities and business rules.
+    - **`infrastructure`**: Implementation of external services (AI agents, DB adapters).
+    - **`utils`**: Helper functions.
+- **`src/types`**: TypeScript type definitions.
 
 ## Key Features
 
@@ -29,3 +35,4 @@ This is a production-ready template for building AI-integrated applications usin
 - **Database**: Drizzle ORM + Neon (Postgres)
 - **Vector DB**: Qdrant
 - **UI**: Tailwind CSS + Shadcn
+- **Testing**: Vitest
