@@ -58,6 +58,24 @@ const fileToBase64 = (file: File): Promise<string> => {
 };
 
 
+const detectAgentFromMessage = (messageText: string): AgentType => {
+    const lower = messageText.toLowerCase();
+
+    // Sales indicators
+    if (lower.includes('₦') || lower.includes('inverter') || lower.includes('battery') ||
+        lower.includes('calculate') || lower.includes('kva') || lower.includes('price')) {
+        return 'sales';
+    }
+
+    // Customer service indicators
+    if (lower.includes('showroom') || lower.includes('location') || lower.includes('warranty') ||
+        lower.includes('contact') || lower.includes('policy')) {
+        return 'customer_service';
+    }
+
+    return 'generalist';
+};
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -73,23 +91,7 @@ export default function ChatInterfaceContent() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const detectAgentFromMessage = (messageText: string): AgentType => {
-        const lower = messageText.toLowerCase();
 
-        // Sales indicators
-        if (lower.includes('₦') || lower.includes('inverter') || lower.includes('battery') ||
-            lower.includes('calculate') || lower.includes('kva') || lower.includes('price')) {
-            return 'sales';
-        }
-
-        // Customer service indicators
-        if (lower.includes('showroom') || lower.includes('location') || lower.includes('warranty') ||
-            lower.includes('contact') || lower.includes('policy')) {
-            return 'customer_service';
-        }
-
-        return 'generalist';
-    };
     // Add this effect to watch for new assistant messages
 
 
@@ -134,6 +136,7 @@ export default function ChatInterfaceContent() {
         },
     });
 
+    // Add this effect to watch for new assistant messages
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
         if (lastMessage?.role === 'assistant' && lastMessage.parts) {
@@ -145,10 +148,12 @@ export default function ChatInterfaceContent() {
 
             if (textContent) {
                 const detectedAgent = detectAgentFromMessage(textContent);
-                setCurrentAgent(detectedAgent);
+                if (detectedAgent !== currentAgent) {
+                    setCurrentAgent(detectedAgent);
+                }
             }
         }
-    }, [messages]);
+    }, [messages, currentAgent]);
 
     const isLoading = status === "submitted" || status === "streaming";
 
@@ -302,6 +307,7 @@ export default function ChatInterfaceContent() {
 
                 // Send with images
                 sendMessage({
+                    role: 'user',
                     content: [
                         { type: 'text', text: userMessage || 'Please analyze this image.' },
                         ...imageParts
@@ -312,14 +318,14 @@ export default function ChatInterfaceContent() {
                 alert('Failed to upload image. Please try again.');
             }
         } else {
-            sendMessage({ text: userMessage });
+            sendMessage({ role: 'user', content: userMessage });
         }
     };
 
     const handleSuggestionClick = (suggestion: string) => {
         setSuggestions([]);
         hasSentFirstMessage.current = true;
-        sendMessage({ text: suggestion });
+        sendMessage({ role: 'user', content: suggestion });
     };
 
     const handleRetry = async () => {
@@ -448,119 +454,131 @@ export default function ChatInterfaceContent() {
                                                 : "bg-card border border-border text-card-foreground"
                                         )}
                                     >
-                                        {(message.parts || []).map((part, idx) => {
-                                            // Handle text content
-                                            if ((part.type as string) === 'text') {
-                                                const isLastMessage = index === messages.length - 1;
-                                                const isMessageStreaming = isLastMessage && status === 'streaming';
+                                        {(() => {
+                                            // Robustly resolve message parts for multimodal content
+                                            let displayParts: any[] = [];
+                                            if (message.parts && message.parts.length > 0) {
+                                                displayParts = message.parts;
+                                            } else if (Array.isArray(message.content)) {
+                                                displayParts = message.content;
+                                            } else if (typeof message.content === 'string') {
+                                                displayParts = [{ type: 'text', text: message.content }];
+                                            }
 
-                                                // Show thinking indicator while streaming with no text
-                                                if (isMessageStreaming && !part.text) {
-                                                    return (
-                                                        <div key={idx} className="flex items-center gap-2 py-2">
-                                                            <motion.div className="flex gap-1">
-                                                                {[0, 1, 2].map((i) => (
-                                                                    <motion.span
-                                                                        key={i}
-                                                                        className="w-2 h-2 rounded-full bg-primary"
-                                                                        animate={{
-                                                                            scale: [1, 1.2, 1],
-                                                                            opacity: [0.5, 1, 0.5],
-                                                                        }}
-                                                                        transition={{
-                                                                            duration: 0.6,
-                                                                            repeat: Infinity,
-                                                                            delay: i * 0.2,
-                                                                        }}
-                                                                    />
-                                                                ))}
-                                                            </motion.div>
-                                                            <span className="text-sm text-muted-foreground">
-                                                                {currentAgent === 'sales' ? 'Calculating...' :
-                                                                    currentAgent === 'customer_service' ? 'Searching...' :
-                                                                        'Thinking...'}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                }
+                                            return displayParts.map((part, idx) => {
+                                                // Handle text content
+                                                if ((part.type as string) === 'text') {
+                                                    const isLastMessage = index === messages.length - 1;
+                                                    const isMessageStreaming = isLastMessage && status === 'streaming';
 
-                                                // Render markdown for assistant messages
-                                                if (isAssistant) {
+                                                    // Show thinking indicator while streaming with no text
+                                                    if (isMessageStreaming && !part.text) {
+                                                        return (
+                                                            <div key={idx} className="flex items-center gap-2 py-2">
+                                                                <motion.div className="flex gap-1">
+                                                                    {[0, 1, 2].map((i) => (
+                                                                        <motion.span
+                                                                            key={i}
+                                                                            className="w-2 h-2 rounded-full bg-primary"
+                                                                            animate={{
+                                                                                scale: [1, 1.2, 1],
+                                                                                opacity: [0.5, 1, 0.5],
+                                                                            }}
+                                                                            transition={{
+                                                                                duration: 0.6,
+                                                                                repeat: Infinity,
+                                                                                delay: i * 0.2,
+                                                                            }}
+                                                                        />
+                                                                    ))}
+                                                                </motion.div>
+                                                                <span className="text-sm text-muted-foreground">
+                                                                    {currentAgent === 'sales' ? 'Calculating...' :
+                                                                        currentAgent === 'customer_service' ? 'Searching...' :
+                                                                            'Thinking...'}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Render markdown for assistant messages
+                                                    if (isAssistant) {
+                                                        return (
+                                                            <FadeInText key={idx}>
+                                                                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-headings:text-foreground prose-p:text-card-foreground prose-strong:text-foreground prose-a:text-primary hover:prose-a:underline">
+                                                                    <ReactMarkdown>
+                                                                        {part.text}
+                                                                    </ReactMarkdown>
+                                                                </div>
+                                                            </FadeInText>
+                                                        );
+                                                    }
+
+                                                    // Plain text for user messages
                                                     return (
                                                         <FadeInText key={idx}>
-                                                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-headings:text-foreground prose-p:text-card-foreground prose-strong:text-foreground prose-a:text-primary hover:prose-a:underline">
-                                                                <ReactMarkdown>
-                                                                    {part.text}
-                                                                </ReactMarkdown>
-                                                            </div>
+                                                            <div className="whitespace-pre-wrap">{part.text}</div>
                                                         </FadeInText>
                                                     );
                                                 }
 
-                                                // Plain text for user messages
-                                                return (
-                                                    <FadeInText key={idx}>
-                                                        <div className="whitespace-pre-wrap">{part.text}</div>
-                                                    </FadeInText>
-                                                );
-                                            }
+                                                // Handle image parts
+                                                if ((part.type as string) === 'image') {
+                                                    const imagePart = part as any;
+                                                    const imageSrc = imagePart.image || imagePart.url || imagePart.base64;
 
-                                            // Handle image parts
-                                            if ((part.type as string) === 'image') {
-                                                const imagePart = part as any;
-                                                const imageSrc = imagePart.image || imagePart.url || imagePart.base64;
+                                                    if (!imageSrc) return null;
 
-                                                if (!imageSrc) return null;
+                                                    return (
+                                                        <div key={idx} className="mt-2 first:mt-0">
+                                                            <img
+                                                                src={imageSrc}
+                                                                alt="Uploaded"
+                                                                className="max-w-full rounded-lg max-h-64 object-contain bg-muted/30 border border-border"
+                                                                loading="lazy"
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
 
-                                                return (
-                                                    <div key={idx} className="mt-2 first:mt-0">
-                                                        <img
-                                                            src={imageSrc}
-                                                            alt="Uploaded"
-                                                            className="max-w-full rounded-lg max-h-64 object-contain bg-muted/30 border border-border"
-                                                            loading="lazy"
-                                                        />
-                                                    </div>
-                                                );
-                                            }
+                                                // Handle tool-invocation (legacy format)
+                                                if ((part.type as string) === 'tool-invocation') {
+                                                    const invocation = (part as any).toolInvocation;
+                                                    return (
+                                                        <div key={idx} className="mt-3 first:mt-0">
+                                                            <ToolResult
+                                                                toolName={invocation.toolName}
+                                                                state={invocation.state}
+                                                                args={invocation.args}
+                                                                result={'result' in invocation ? invocation.result : undefined}
+                                                                toolCallId={invocation.toolCallId}
+                                                                onToolResult={handleToolResult}
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
 
-                                            // Handle tool-invocation (legacy format)
-                                            if ((part.type as string) === 'tool-invocation') {
-                                                const invocation = (part as any).toolInvocation;
-                                                return (
-                                                    <div key={idx} className="mt-3 first:mt-0">
-                                                        <ToolResult
-                                                            toolName={invocation.toolName}
-                                                            state={invocation.state}
-                                                            args={invocation.args}
-                                                            result={'result' in invocation ? invocation.result : undefined}
-                                                            toolCallId={invocation.toolCallId}
-                                                            onToolResult={handleToolResult}
-                                                        />
-                                                    </div>
-                                                );
-                                            }
+                                                // Handle tool-{toolName} format (AI SDK v6)
+                                                if ((part.type as string).startsWith('tool-')) {
+                                                    const toolPart = part as any;
+                                                    const toolName = (part.type as string).replace('tool-', '');
+                                                    return (
+                                                        <div key={idx} className="mt-3 first:mt-0">
+                                                            <ToolResult
+                                                                toolName={toolName}
+                                                                state={toolPart.state === 'output-available' ? 'result' : 'call'}
+                                                                args={toolPart.input}
+                                                                result={toolPart.output}
+                                                                toolCallId={toolPart.toolCallId}
+                                                                onToolResult={handleToolResult}
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
 
-                                            // Handle tool-{toolName} format (AI SDK v6)
-                                            if ((part.type as string).startsWith('tool-')) {
-                                                const toolPart = part as any;
-                                                const toolName = (part.type as string).replace('tool-', '');
-                                                return (
-                                                    <div key={idx} className="mt-3 first:mt-0">
-                                                        <ToolResult
-                                                            toolName={toolName}
-                                                            state={toolPart.state === 'output-available' ? 'result' : 'call'}
-                                                            args={toolPart.input}
-                                                            result={toolPart.output}
-                                                            toolCallId={toolPart.toolCallId}
-                                                            onToolResult={handleToolResult}
-                                                        />
-                                                    </div>
-                                                );
-                                            }
-
-                                            return null;
-                                        })}
+                                                return null;
+                                            });
+                                        })()}
                                     </div>
 
                                     {/* User Avatar */}

@@ -18,6 +18,7 @@ import {
     policySearchTool,
     productSearchTool
 } from '@/lib/infrastructure/ai/tools/knowledge-tools';
+import { calculatorTool } from '@/lib/infrastructure/ai/tools/calculator-tool';
 import { SYSTEM_PROMPTS } from '@/lib/infrastructure/ai/prompts/system-prompts';
 
 const openai = createOpenAI({
@@ -347,7 +348,7 @@ function getAgentConfig(agentType: AgentType): AgentConfig {
                 systemPrompt: SYSTEM_PROMPTS.SALES_ENGINEER,
                 tools: {
                     searchProducts: productSearchTool,
-                    // Add calculator tool here when implemented
+                    calculatePowerNeeds: calculatorTool,
                 },
                 temperature: 0.7,
                 maxSteps: 5,
@@ -475,6 +476,9 @@ export async function POST(req: Request) {
             tools: agentConfig.tools,
             toolChoice: 'auto',
             temperature: agentConfig.temperature,
+            stopWhen: stepCountIs(agentConfig.maxSteps || 5),
+
+
             // Add metadata for debugging
             onFinish: async ({ text, finishReason, usage }) => {
                 console.log('✅ Generation Complete:', {

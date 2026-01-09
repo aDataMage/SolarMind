@@ -7,6 +7,8 @@
 import { Info, AlertTriangle, Search, MessageSquare, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProductCard, ProductData } from "./product-card";
+import { PowerAnalysisCard } from "./power-analysis-card";
+
 
 interface ToolResultProps {
     toolName: string;
@@ -63,6 +65,36 @@ export function ToolResult({ toolName, state, args, result, toolCallId, onToolRe
                 </div>
             );
         }
+
+        case 'calculatePowerNeeds': {
+            // Transform linear tool output to structured UI props
+            const rawData = result as any;
+
+            const transformedData = {
+                appliances: rawData.appliances.map((app: any) => ({
+                    name: app.name,
+                    watts: app.wattage,
+                    count: 1, // Tool doesn't track count per appliance entry derived from list
+                    total: app.wattage // Total for this entry
+                })),
+                totalLoad: rawData.totalWattage,
+                peakLoad: rawData.totalWattage, // Assuming constant load for peak in simple calc
+                recommendedInverter: {
+                    size: `${rawData.recommendedInverterWatts}W`,
+                    reason: "Rated for peak load + 25% safety margin"
+                },
+                recommendedBattery: {
+                    capacity: `${rawData.requiredBatteryCapacityKwh.toFixed(2)}kWh`,
+                    count: 1,
+                    voltage: "System Voltage (12V/24V/48V)", // simplified
+                    backupTime: `${rawData.backupHours} Hours`,
+                    reason: `Required to sustain load for ${rawData.backupHours}h`
+                }
+            };
+
+            return <PowerAnalysisCard {...transformedData} />;
+        }
+
 
         case 'escalateToHuman': {
             const data = result as { escalated?: boolean; message?: string; ticketId?: string };

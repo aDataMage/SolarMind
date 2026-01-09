@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "SolarMind",
     title: "SolarMind | Future Energy Solutions",
     description: "Premium solar panels, batteries, and accessories for the modern home.",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",

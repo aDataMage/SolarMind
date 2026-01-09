@@ -1,8 +1,18 @@
+"use client";
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sun, Facebook, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Footer() {
+    const pathname = usePathname();
+
+    // Hide footer on chat page to allow full-height chat interface
+    if (pathname?.startsWith('/chat')) {
+        return null;
+    }
+
     return (
         <footer className="bg-muted/30 border-t pt-16 pb-8">
             <div className="container mx-auto px-4">

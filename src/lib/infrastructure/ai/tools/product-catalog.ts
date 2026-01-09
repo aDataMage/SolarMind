@@ -77,23 +77,67 @@ export const PRODUCT_CATALOG: ProductData[] = [
 ];
 
 export function searchProducts(query: string, category?: string): ProductData[] {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
 
-    return PRODUCT_CATALOG.filter(product => {
-        // Filter by category if provided
+    // 1. Broad / "Best" queries - return all or top picks
+    const broadTerms = ['products', 'solar', 'all', 'equipment', 'best', 'recommend', 'options'];
+    if (broadTerms.some(term => q === term || ((q.includes('best') || q.includes('recommend')) && q.length < 20))) {
+        // For "best", potentially filter by some "featured" flag or return expensive items, 
+        // but for now returning all matching the category is safer.
+        return PRODUCT_CATALOG.filter(p => !category || category === 'all' || p.category === category);
+    }
+
+    // 2. Tokenize the query for smarter matching
+    // Extract potential capacity numbers (e.g. "5kva", "200ah") to handle specific technical searches
+    const tokens = q.split(/\s+/).filter(t => t.length > 1);
+
+    const scoredProducts = PRODUCT_CATALOG.map(product => {
+        let score = 0;
+        const pText = `${product.name} ${product.description} ${product.category} ${JSON.stringify(product.specs)}`.toLowerCase();
+
+        // Check for category filter first
         if (category && category !== 'all' && product.category !== category) {
-            return false;
+            return { product, score: -1 };
         }
 
-        // Return all items for broad queries
-        const broadTerms = ['products', 'solar', 'all', 'equipment'];
-        if (broadTerms.some(term => q.includes(term)) && q.length < 15) {
-            return true;
-        }
+        // Exact phase match boost
+        if (pText.includes(q)) score += 10;
 
-        // Search in name and description
-        return product.name.toLowerCase().includes(q) ||
-            product.description.toLowerCase().includes(q) ||
-            product.specs.capacity?.toLowerCase().includes(q);
+        // Token matching
+        tokens.forEach(token => {
+            if (pText.includes(token)) score += 3;
+            // Partial match (e.g. "5kva" matching "3.5kva") - be careful not to match too broadly
+            else if (token.replace(/[^a-z0-9]/g, '') === product.category) score += 2;
+        });
+
+        // Numeric capacity matching (simple heuristic)
+        // If query has "5kva" and product spec has "5kva" or "5kw", boost it
+        const capacityMatch = tokens.some(t => {
+            const num = parseFloat(t);
+            return !isNaN(num) && pText.includes(num.toString());
+        });
+        if (capacityMatch) score += 5;
+
+        return { product, score };
     });
+
+    // Filter and sort
+    const results = scoredProducts
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.product);
+
+    // 3. Fallback: If specific search fails but category is present, return all in category
+    if (results.length === 0 && category && category !== 'all') {
+        return PRODUCT_CATALOG.filter(p => p.category === category);
+    }
+
+    // 4. Fallback: If simple keyword match failed, try just matching the category name from query
+    if (results.length === 0) {
+        const categoryMatch = PRODUCT_CATALOG.filter(p => q.includes(p.category));
+        if (categoryMatch.length > 0) return categoryMatch;
+    }
+
+    return results;
 }
+

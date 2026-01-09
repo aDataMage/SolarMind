@@ -171,3 +171,87 @@ export const policySearchTool = tool({
     return await searchKnowledgeBase({ query, category: 'policy' });
   },
 });
+
+/**
+ * Power consumption calculation tool
+ */
+export const calculatePowerNeeds = tool({
+  description: 'Calculate solar system requirements based on appliances and usage. Returns structured data.',
+  inputSchema: z.object({
+    appliances: z.array(z.object({
+      name: z.string(),
+      watts: z.number(),
+      count: z.number(),
+    })).describe('List of appliances to power'),
+    usageHours: z.number().optional().default(8).describe('Desired backup hours (default: 8)'),
+  }),
+  execute: async ({ appliances, usageHours }) => {
+    // 1. Calculate loads
+    const appDetails = appliances.map(app => ({
+      ...app,
+      total: app.watts * app.count
+    }));
+
+    const totalLoad = appDetails.reduce((sum, app) => sum + app.total, 0);
+    const peakLoad = Math.round(totalLoad * 1.5); // 50% surge margin
+
+    // 2. Recommend Inverter (Round up to standard sizes: 1kVA, 2.5kVA, 3.5kVA, 5kVA, 10kVA)
+    let invSize = "1kVA";
+    let invCapacity = 1000;
+
+    // Logic to pick inverter size based on Load + 30% safety margin on continuous
+    const requiredCapacity = totalLoad * 1.3;
+
+    if (requiredCapacity > 10000) { invSize = "15kVA+"; invCapacity = 15000; }
+    else if (requiredCapacity > 7500) { invSize = "10kVA"; invCapacity = 10000; }
+    else if (requiredCapacity > 5000) { invSize = "7.5kVA"; invCapacity = 7500; }
+    else if (requiredCapacity > 3500) { invSize = "5kVA"; invCapacity = 5000; }
+    else if (requiredCapacity > 2500) { invSize = "3.5kVA"; invCapacity = 3500; }
+    else if (requiredCapacity > 1500) { invSize = "2.5kVA"; invCapacity = 2500; }
+    else if (requiredCapacity > 1000) { invSize = "1.5kVA"; invCapacity = 1500; }
+
+    // 3. Recommend Batteries ( Lead Acid 200Ah 12V assumed for calculation)
+    // Energy needed = Total Load * Hours
+    // Battery Bank (Ah) = (Energy / System Voltage) / DoD / Efficiency
+    // Simplified: 
+    const dailyEnergyWh = totalLoad * usageHours;
+    const systemVoltage = invCapacity >= 3500 ? (invCapacity >= 5000 ? 48 : 24) : 12;
+
+    // Wh / Voltage = Ah needed. 
+    // Real-world factor: DoD 50% * Efficiency 85% = ~0.42 usable
+    const requiredAh = dailyEnergyWh / systemVoltage / 0.5 / 0.85;
+    const batteryCount = Math.ceil(requiredAh / 200);
+
+    // Ensure battery count matches system voltage (e.g. 24V needs pairs, 48V needs groups of 4)
+    let finalBatCount = batteryCount;
+    if (systemVoltage === 24 && finalBatCount % 2 !== 0) finalBatCount++;
+    if (systemVoltage === 48 && finalBatCount % 4 !== 0) finalBatCount += (4 - (finalBatCount % 4));
+
+    // 4. Recommend Panels (Optional - assuming 5 sun hours)
+    // Needed to replenish daily energy + 30% losses
+    const arraySizeW = (dailyEnergyWh / 5) * 1.3;
+    const panelCount = Math.ceil(arraySizeW / 450); // Assuming 450W panels
+
+    return {
+      appliances: appDetails,
+      totalLoad,
+      peakLoad,
+      recommendedInverter: {
+        size: invSize,
+        reason: `Handles ${totalLoad}W continuous load with safety margin`
+      },
+      recommendedBattery: {
+        capacity: "200Ah",
+        voltage: "12V",
+        count: finalBatCount,
+        backupTime: `${usageHours} Hours`,
+        reason: `${dailyEnergyWh}Wh energy storage requirement`
+      },
+      recommendedPanels: {
+        capacity: "450W",
+        count: panelCount,
+        reason: `Recharges batteries in ~5 hours sunlight`
+      }
+    };
+  },
+});

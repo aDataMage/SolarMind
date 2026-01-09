@@ -10,8 +10,8 @@ import {
   searchProductCatalog,
   formatProductForDisplay,
   type ProductSearchParams,
-  type SolarProduct,
 } from '@/lib/infrastructure/ai/tools/product-catalog-tool';
+import type { SolarProduct } from '@/lib/domain/models/product';
 
 describe('Product Catalog Tool', () => {
   describe('searchProductCatalog', () => {
@@ -148,6 +148,7 @@ describe('Product Catalog Tool', () => {
       const product: SolarProduct = {
         id: 'test-001',
         name: 'Test Inverter 3kVA',
+        model: 'TEST-001',
         category: 'inverter',
         brand: 'TestBrand',
         specifications: {
@@ -160,6 +161,7 @@ describe('Product Catalog Tool', () => {
         currency: 'NGN',
         inStock: true,
         description: 'A test inverter for unit testing.',
+        features: [],
       };
 
       const formatted = formatProductForDisplay(product);
@@ -175,6 +177,7 @@ describe('Product Catalog Tool', () => {
       const product: SolarProduct = {
         id: 'test-002',
         name: 'Out of Stock Product',
+        model: 'TEST-002',
         category: 'battery',
         brand: 'TestBrand',
         specifications: {
@@ -185,6 +188,7 @@ describe('Product Catalog Tool', () => {
         currency: 'NGN',
         inStock: false,
         description: 'Currently unavailable.',
+        features: [],
       };
 
       const formatted = formatProductForDisplay(product);
